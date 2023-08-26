@@ -9,6 +9,7 @@
       integrity="sha384-xcuj3WpfgjlKF+FXhSQFQ0ZNr39ln+hwjN3npfM9VBnUskLolQAcN80McRIVOPuO"
       crossorigin="anonymous"
     ></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
@@ -16,18 +17,12 @@
     <div
       class="h-screen max-w-2xl m-auto flex flex-col items-center justify-between py-5 px-5 gap-8"
     >
-      <div id="messages">
-        {{ range . }}
+      <div hx-ext="ws" ws-connect="/ws" id="messages">
+        {{ range . }} {{ block "message" . }}
         <div><strong>{{ .Sender }}</strong>: {{ .Content }}</div>
-        {{ end }}
+        {{ end }} {{ end }}
       </div>
-      <form
-        hx-post="/chat"
-        hx-target="#messages"
-        hx-swap="beforeend"
-        _="on submit target.reset()"
-        class="w-full flex gap-3"
-      >
+      <form hx-post="/chat" hx-swap="none" _="on submit target.reset()" class="w-full flex gap-3">
         <input
           placeholder="Message"
           class="border-2 border-gray-200 w-full px-3 py-1.5"
