@@ -4,85 +4,78 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
+	"strconv"
 
+	"github.com/OmBudhiraja/go-htmx-chat/ws"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/net/websocket"
 )
+
+type ChatRoom struct {
+	Id       int
+	Name     string
+	Messages []Message
+}
 
 type Message struct {
 	Sender  string
 	Content string
 }
 
-type WsServer struct {
-	clients map[*websocket.Conn]bool
-}
-
-func NewWsWsServer() *WsServer {
-	return &WsServer{
-		clients: make(map[*websocket.Conn]bool),
-	}
-}
-
-func (s *WsServer) handleWS(ws *websocket.Conn) {
-	fmt.Println("New incoming client", ws.RemoteAddr().String())
-	s.clients[ws] = true
-
-	s.readLoop(ws)
-}
-
-func (s *WsServer) readLoop(ws *websocket.Conn) {
-	var buff []byte
-	for {
-		n, err := ws.Read(buff)
-
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Println("Error reading message", err.Error())
-			continue
-		}
-		msg := buff[:n]
-		fmt.Println("Message received", string(msg))
-
-	}
-}
-
-func (s *WsServer) broadcast(msg string) {
-	for client := range s.clients {
-		client.Write([]byte(msg))
-	}
-}
-
-var messages = []Message{
-	{Sender: "Tim", Content: "Good morning!"},
-	{Sender: "Jane", Content: "Hello there!"},
+var chatRooms = []ChatRoom{
+	{
+		Id:   0,
+		Name: "General",
+		Messages: []Message{
+			{Sender: "Tim", Content: "Good morning!"},
+			{Sender: "Jane", Content: "Hello there!"},
+		},
+	},
 }
 
 func main() {
 
-	wsServer := NewWsWsServer()
+	wsServer := ws.NewWsWsServer()
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.Must(template.ParseFiles("index.html"))
-		tmpl.Execute(w, messages)
+
+		fmt.Println("Chat rooms", chatRooms)
+
+		tmpl.Execute(w, map[string]interface{}{
+			"Rooms":      chatRooms,
+			"ActiveRoom": chatRooms[0],
+		})
 	})
 
 	r.Post("/chat", func(w http.ResponseWriter, r *http.Request) {
+
+		roomId, err := strconv.Atoi(r.FormValue("room"))
+
+		if err != nil {
+			fmt.Println("Error parsing room id", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		room := chatRooms[roomId]
+
 		msg := Message{
 			Sender:  "Anonymous",
 			Content: r.FormValue("content"),
 		}
 
-		messages = append(messages, msg)
+		room.Messages = append(room.Messages, msg)
+
+		chatRooms[roomId] = room
+
+		fmt.Println("Message received", room)
 
 		tmpl := template.Must(template.ParseFiles("index.html"))
 		var tpl bytes.Buffer
@@ -93,13 +86,42 @@ func main() {
 		}
 
 		messageStr := `<div id="messages" hx-swap-oob="beforeend">` + tpl.String() + `</div>`
-		wsServer.broadcast(messageStr)
+		wsServer.Broadcast(messageStr)
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(nil)
 	})
 
-	r.Handle("/ws", websocket.Handler(wsServer.handleWS))
+	r.Post("/create-room", func(w http.ResponseWriter, r *http.Request) {
+		newChatRoom := ChatRoom{
+			Id:       len(chatRooms),
+			Name:     "Untitled",
+			Messages: []Message{},
+		}
+		chatRooms = append(chatRooms, newChatRoom)
+
+		tmpl := template.Must(template.ParseFiles("index.html"))
+		tmpl.ExecuteTemplate(w, "roomBtn", newChatRoom)
+	})
+
+	r.Get("/room", func(w http.ResponseWriter, r *http.Request) {
+		roomId, err := strconv.Atoi(r.URL.Query().Get("id"))
+
+		if err != nil {
+			fmt.Println("Error parsing room id", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		chatRoom := chatRooms[roomId]
+		tmpl := template.Must(template.ParseFiles("index.html"))
+		tmpl.ExecuteTemplate(w, "ChatSection", map[string]interface{}{
+			"ActiveRoom": chatRoom,
+		})
+
+	})
+
+	r.Handle("/ws", websocket.Handler(wsServer.HandleWS))
 
 	fmt.Println("Server running on port http://localhost:5000")
 

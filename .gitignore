@@ -1,2 +1,4 @@
-./go-htmx-chat.exe
-./go-htmx-chat
+go-htmx-chat.exe
+go-htmx-chat
+
+.env

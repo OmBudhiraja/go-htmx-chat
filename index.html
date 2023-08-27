@@ -14,23 +14,62 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
-    <div
-      class="h-screen max-w-2xl m-auto flex flex-col items-center justify-between py-5 px-5 gap-8"
-    >
-      <div hx-ext="ws" ws-connect="/ws" id="messages">
-        {{ range . }} {{ block "message" . }}
-        <div><strong>{{ .Sender }}</strong>: {{ .Content }}</div>
+    <div class="flex h-screen">
+      <aside
+        id="rooms-lists"
+        class="h-full max-h-full overflow-y-auto w-72 bg-gray-100 p-5 flex flex-col gap-5"
+      >
+        <button
+          hx-post="/create-room"
+          hx-trigger="click"
+          hx-target="#rooms-lists"
+          hx-swap="beforeend"
+          class="text-white bg-blue-500 px-5 py-2 w-full"
+        >
+          Create New Room
+        </button>
+        {{ range .Rooms }} {{ block "roomBtn" .}}
+        <button
+          hx-get="/room?id={{ .Id }}"
+          hx-trigger="click"
+          hx-target="#chat-section"
+          hx-swap="innerHTML"
+          class="text-black bg-gray-300 px-5 py-2 w-full"
+        >
+          {{ .Name }}
+        </button>
         {{ end }} {{ end }}
-      </div>
-      <form hx-post="/chat" hx-swap="none" _="on submit target.reset()" class="w-full flex gap-3">
-        <input
-          placeholder="Message"
-          class="border-2 border-gray-200 w-full px-3 py-1.5"
-          type="text"
-          name="content"
-        />
-        <button class="text-white bg-blue-500 px-5 py-2" type="submit">Send</button>
-      </form>
+      </aside>
+      <section
+        id="chat-section"
+        hx-ext="ws"
+        ws-connect="/ws"
+        class="h-full flex-1 m-auto flex flex-col items-center justify-between py-5 px-5 gap-8"
+      >
+        {{ block "ChatSection" . }}
+        <div id="messages">
+          {{ range .ActiveRoom.Messages }} {{ block "message" . }}
+          <div><strong>{{ .Sender }}</strong>: {{ .Content }}</div>
+          {{ end }} {{ end }}
+        </div>
+        <form
+          id="message-form"
+          hx-post="/chat"
+          hx-swap="none"
+          _="on submit target.reset()"
+          class="w-full flex gap-3"
+        >
+          <input type="hidden" name="room" value="{{ .ActiveRoom.Id }}" />
+          <input
+            placeholder="Message"
+            class="border-2 border-gray-200 w-full px-3 py-1.5"
+            type="text"
+            name="content"
+          />
+          <button class="text-white bg-blue-500 px-5 py-2" type="submit">Send</button>
+        </form>
+        {{ end }}
+      </section>
     </div>
   </body>
 </html>
