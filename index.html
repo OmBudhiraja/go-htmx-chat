@@ -33,20 +33,20 @@
           hx-get="/room?id={{ .Id }}"
           hx-trigger="click"
           hx-target="#chat-section"
-          hx-swap="innerHTML"
+          hx-swap="outerHTML"
           class="text-black bg-gray-300 px-5 py-2 w-full"
         >
           {{ .Name }}
         </button>
         {{ end }} {{ end }}
       </aside>
+      {{ block "ChatSection" . }}
       <section
-        id="chat-section"
         hx-ext="ws"
-        ws-connect="/ws"
+        ws-connect="/ws?room={{ .ActiveRoom.Id }}"
+        id="chat-section"
         class="h-full flex-1 m-auto flex flex-col items-center justify-between py-5 px-5 gap-8"
       >
-        {{ block "ChatSection" . }}
         <div id="messages">
           {{ range .ActiveRoom.Messages }} {{ block "message" . }}
           <div><strong>{{ .Sender }}</strong>: {{ .Content }}</div>
@@ -68,8 +68,8 @@
           />
           <button class="text-white bg-blue-500 px-5 py-2" type="submit">Send</button>
         </form>
-        {{ end }}
       </section>
+      {{ end }}
     </div>
   </body>
 </html>

@@ -86,7 +86,7 @@ func main() {
 		}
 
 		messageStr := `<div id="messages" hx-swap-oob="beforeend">` + tpl.String() + `</div>`
-		wsServer.Broadcast(messageStr)
+		wsServer.Broadcast(messageStr, roomId)
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(nil)
