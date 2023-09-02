@@ -77,16 +77,15 @@ func main() {
 
 		fmt.Println("Message received", room)
 
-		tmpl := template.Must(template.ParseFiles("index.html"))
-		var tpl bytes.Buffer
-		if err := tmpl.ExecuteTemplate(&tpl, "message", msg); err != nil {
+		tmpl := template.Must(template.ParseFiles("partialTemplates/message.html"))
+		var messageStr bytes.Buffer
+		if err := tmpl.Execute(&messageStr, msg); err != nil {
 			fmt.Println("Error executing template", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		messageStr := `<div id="messages" hx-swap-oob="beforeend">` + tpl.String() + `</div>`
-		wsServer.Broadcast(messageStr, roomId)
+		wsServer.Broadcast(messageStr.String(), roomId)
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(nil)

@@ -12,6 +12,23 @@
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes fade-in {
+        0% {
+          opacity: 0;
+          scale: 0.9;
+        }
+        40% {
+          opacity: 1;
+        }
+
+        100% {
+          opacity: 1;
+          scale: 1;
+          height: auto;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="flex h-screen">
@@ -45,12 +62,16 @@
         hx-ext="ws"
         ws-connect="/ws?room={{ .ActiveRoom.Id }}"
         id="chat-section"
-        class="h-full flex-1 m-auto flex flex-col items-center justify-between py-5 px-5 gap-8"
+        class="h-full max-h-full overflow-hidden flex-1 m-auto flex flex-col items-center justify-between py-5 px-5 gap-8"
       >
-        <div id="messages">
-          {{ range .ActiveRoom.Messages }} {{ block "message" . }}
-          <div><strong>{{ .Sender }}</strong>: {{ .Content }}</div>
-          {{ end }} {{ end }}
+        <div class="flex flex-col-reverse overflow-y-auto max-h-full flex-1 w-full">
+          <div id="messages" class="w-full flex flex-col gap-4">
+            {{ range .ActiveRoom.Messages }} {{ block "message" . }}
+            <div class="bg-gray-100 px-4 py-2 w-fit max-w-sm origin-left">
+              <strong>{{ .Sender }}</strong>: {{ .Content }}
+            </div>
+            {{ end }} {{ end }}
+          </div>
         </div>
         <form
           id="message-form"
