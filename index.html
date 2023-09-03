@@ -11,7 +11,7 @@
     ></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio,line-clamp"></script>
     <style>
       @keyframes fade-in {
         0% {
@@ -26,6 +26,20 @@
           opacity: 1;
           scale: 1;
           height: auto;
+        }
+      }
+
+      @keyframes slide-up {
+        0% {
+          height: 0;
+          opacity: 0;
+          /* transform: translateY(100%); */
+        }
+
+        100% {
+          height: auto;
+          opacity: 1;
+          /* transform: translateY(0); */
         }
       }
     </style>
@@ -62,10 +76,10 @@
         hx-ext="ws"
         ws-connect="/ws?room={{ .ActiveRoom.Id }}"
         id="chat-section"
-        class="h-full max-h-full overflow-hidden flex-1 m-auto flex flex-col items-center justify-between py-5 px-5 gap-8"
+        class="h-full max-h-full overflow-hidden flex-1 m-auto flex flex-col items-center justify-between gap-8"
       >
         <div class="flex flex-col-reverse overflow-y-auto max-h-full flex-1 w-full">
-          <div id="messages" class="w-full flex flex-col gap-4">
+          <div id="messages" class="w-full flex flex-col gap-4 pt-5 px-5">
             {{ range .ActiveRoom.Messages }} {{ block "message" . }}
             <div class="bg-gray-100 px-4 py-2 w-fit max-w-sm origin-left">
               <strong>{{ .Sender }}</strong>: {{ .Content }}
@@ -78,20 +92,60 @@
           hx-post="/chat"
           hx-swap="none"
           _="on submit target.reset()"
-          class="w-full flex gap-3"
+          class="w-full flex flex-col gap-2 py-5 px-5 bg-slate-200 overflow-hidden"
         >
-          <input type="hidden" name="room" value="{{ .ActiveRoom.Id }}" />
-          <input
-            placeholder="Message"
-            class="border-2 border-gray-200 w-full px-3 py-1.5"
-            type="text"
-            name="content"
-            required
-          />
-          <button class="text-white bg-blue-500 px-5 py-2" type="submit">Send</button>
+          <div class="flex gap-3">
+            <input type="hidden" name="room" value="{{ .ActiveRoom.Id }}" />
+            <input
+              placeholder="Message"
+              class="border-2 border-gray-200 w-full px-3 py-1.5"
+              type="text"
+              name="content"
+              id="message-input"
+              hx-post="/link-preview"
+              hx-swap="afterbegin"
+              hx-trigger="keyup changed delay:700ms"
+              hx-target="#message-form"
+              required
+            />
+            <button class="text-white bg-blue-500 px-5 py-2" type="submit">Send</button>
+          </div>
         </form>
       </section>
       {{ end }}
     </div>
   </body>
+  <script>
+    htmx.on('htmx:beforeRequest', (e) => {
+      if (e.detail.pathInfo.requestPath === '/link-preview') {
+        const inputValue = e.target.value;
+
+        const notIncludesUrl = inputValue.split(' ').every((val) => {
+          return !isValidUrl(val);
+        });
+
+        const linkPreviewEl = document.getElementById('link-preview');
+
+        if (notIncludesUrl && linkPreviewEl) {
+          linkPreviewEl.remove();
+        }
+
+        if (notIncludesUrl) {
+          e.preventDefault();
+        }
+
+        if (!notIncludesUrl && linkPreviewEl) {
+          e.preventDefault();
+        }
+      }
+    });
+
+    function isValidUrl(str) {
+      try {
+        return Boolean(new URL(str));
+      } catch (_) {
+        return false;
+      }
+    }
+  </script>
 </html>

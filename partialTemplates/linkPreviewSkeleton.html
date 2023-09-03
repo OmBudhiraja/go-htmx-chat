@@ -1,0 +1,18 @@
+<div
+  aria-hidden="true"
+  hx-get="/preview-details?url={{ .Url }}"
+  hx-trigger="load"
+  hx-swap="outerHTML"
+  id="link-preview"
+  class="w-full animate-[slide-up_0.3s] flex items-center gap-4"
+>
+  <div
+    class="bg-slate-300 flex-1 h-20 w-full p-5 flex items-center justify-start gap-5 animate-pulse"
+  >
+    <img class="h-8 w-8" src="/public/icons/link.svg" alt="" />
+    <p class="line-clamp-1">{{ .Url }}</p>
+  </div>
+  <button class="h-fit w-fit" type="button" _="on click me.parentElement.remove()">
+    <img class="h-3.5 w-3.5" src="/public/icons/close.svg" alt="" />
+  </button>
+</div>

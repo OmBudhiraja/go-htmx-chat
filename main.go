@@ -7,7 +7,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/OmBudhiraja/go-htmx-chat/utils"
 	"github.com/OmBudhiraja/go-htmx-chat/ws"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -42,6 +45,9 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+
+	fs := http.FileServer(http.Dir("./public"))
+	r.Handle("/public/*", http.StripPrefix("/public/", fs))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.Must(template.ParseFiles("index.html"))
@@ -118,6 +124,40 @@ func main() {
 			"ActiveRoom": chatRoom,
 		})
 
+	})
+
+	r.Post("/link-preview", func(w http.ResponseWriter, r *http.Request) {
+		messageInput := r.FormValue("content")
+		var url string
+
+		for _, word := range strings.Split(messageInput, " ") {
+			if utils.IsValidURL(word) {
+				url = word
+				break
+			}
+		}
+
+		if url == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		tmpl := template.Must(template.ParseFiles("partialTemplates/linkPreviewSkeleton.html"))
+		tmpl.Execute(w, map[string]interface{}{
+			"Url": url,
+		})
+	})
+
+	r.Get("/preview-details", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(4 * time.Second)
+		url := r.URL.Query().Get("url")
+		tmpl := template.Must(template.ParseFiles("partialTemplates/linkPreview.html"))
+		tmpl.Execute(w, map[string]interface{}{
+			"Image":       "/public/images/placeholder.png",
+			"Title":       "Link Preview",
+			"Url":         url,
+			"Description": "This is a link preview. It shows the title, description and image of the link you have shared.",
+		})
 	})
 
 	r.Handle("/ws", websocket.Handler(wsServer.HandleWS))
