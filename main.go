@@ -158,15 +158,8 @@ func main() {
 			return
 		}
 
-		// time.Sleep(4 * time.Second)
 		tmpl := template.Must(template.ParseFiles("partialTemplates/linkPreview.html"))
 		tmpl.Execute(w, &metadata)
-		// tmpl.Execute(w, map[string]interface{}{
-		// 	"Image":       "/public/images/placeholder.png",
-		// 	"Title":       "Link Preview",
-		// 	"Url":         url,
-		// 	"Description": "This is a link preview. It shows the title, description and image of the link you have shared.",
-		// })
 	})
 
 	r.Handle("/ws", websocket.Handler(wsServer.HandleWS))

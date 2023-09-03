@@ -18,6 +18,10 @@
       <p class="line-clamp-2 text-xs">{{ .Description }}</p>
     </div>
   </a>
+  <input type="hidden" name="previewTitle" value="{{ .Title }}" />
+  <input type="hidden" name="previewDescription" value="{{ .Description }}" />
+  <input type="hidden" name="previewImage" value="{{ .Image }}" />
+  <input type="hidden" name="previewUrl" value="{{ .Url }}" />
   <button class="h-fit w-fit" type="button" _="on click me.parentElement.remove()">
     <img class="h-3.5 w-3.5" src="/public/icons/close.svg" alt="" />
   </button>
