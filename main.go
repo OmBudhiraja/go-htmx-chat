@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/OmBudhiraja/go-htmx-chat/scrapper"
 	"github.com/OmBudhiraja/go-htmx-chat/utils"
 	"github.com/OmBudhiraja/go-htmx-chat/ws"
 	"github.com/go-chi/chi/v5"
@@ -149,15 +149,24 @@ func main() {
 	})
 
 	r.Get("/preview-details", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(4 * time.Second)
-		url := r.URL.Query().Get("url")
+
+		metadata, err := scrapper.GetMetadata(r.URL.Query().Get("url"))
+
+		if err != nil {
+			fmt.Println("Error getting metadata", err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// time.Sleep(4 * time.Second)
 		tmpl := template.Must(template.ParseFiles("partialTemplates/linkPreview.html"))
-		tmpl.Execute(w, map[string]interface{}{
-			"Image":       "/public/images/placeholder.png",
-			"Title":       "Link Preview",
-			"Url":         url,
-			"Description": "This is a link preview. It shows the title, description and image of the link you have shared.",
-		})
+		tmpl.Execute(w, &metadata)
+		// tmpl.Execute(w, map[string]interface{}{
+		// 	"Image":       "/public/images/placeholder.png",
+		// 	"Title":       "Link Preview",
+		// 	"Url":         url,
+		// 	"Description": "This is a link preview. It shows the title, description and image of the link you have shared.",
+		// })
 	})
 
 	r.Handle("/ws", websocket.Handler(wsServer.HandleWS))

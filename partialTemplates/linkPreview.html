@@ -1,22 +1,24 @@
-<a
-  href="{{ .Url }}"
-  target="_blank"
+<div
   id="link-preview"
   hx-swap-oob="outerHTML"
   class="w-full flex items-center gap-4 overflow-hidden"
 >
-  <div class="bg-slate-300 h-20 flex-1 w-full flex items-start justify-start">
+  <a
+    href="{{ .Url }}"
+    target="_blank"
+    class="bg-slate-300 h-20 flex-1 w-full flex items-start justify-start"
+  >
     {{ if .Image }}
     <div>
-      <img class="h-20 w-20 object-contain" src="{{ .Image }}" alt="" />
+      <img class="h-20 w-20 object-cover" src="{{ .Image }}" alt="" />
     </div>
     {{ end }}
     <div class="py-2 px-4 flex-1 w-full flex flex-col gap-1">
       <h4 class="line-clamp-1 text-sm font-medium">{{ .Title }}</h4>
       <p class="line-clamp-2 text-xs">{{ .Description }}</p>
     </div>
-  </div>
+  </a>
   <button class="h-fit w-fit" type="button" _="on click me.parentElement.remove()">
     <img class="h-3.5 w-3.5" src="/public/icons/close.svg" alt="" />
   </button>
-</a>
+</div>
