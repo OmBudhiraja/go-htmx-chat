@@ -13,6 +13,13 @@
     <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
     <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio,line-clamp"></script>
     <style>
+      a {
+        color: rgb(59, 13, 246) !important;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
       @keyframes fade-in {
         0% {
           opacity: 0;
@@ -89,7 +96,7 @@
           id="message-form"
           hx-post="/chat"
           hx-swap="none"
-          _="on submit target.reset() then remove #link-preview"
+          _="on submit target.reset() then if #link-preview remove #link-preview end"
           class="w-full flex flex-col gap-2 py-5 px-5 bg-slate-200 overflow-hidden"
         >
           <div class="flex gap-3">
@@ -140,7 +147,8 @@
 
     function isValidUrl(str) {
       try {
-        return Boolean(new URL(str));
+        const url = new URL(str);
+        return url.protocol === 'http:' || url.protocol === 'https:';
       } catch (_) {
         return false;
       }

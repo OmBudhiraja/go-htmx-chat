@@ -13,7 +13,6 @@ import (
 	"github.com/OmBudhiraja/go-htmx-chat/utils"
 	"github.com/OmBudhiraja/go-htmx-chat/ws"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/net/websocket"
 )
 
@@ -25,7 +24,7 @@ type ChatRoom struct {
 
 type Message struct {
 	Sender  string
-	Content string
+	Content template.HTML
 }
 
 var chatRooms = []ChatRoom{
@@ -44,15 +43,13 @@ func main() {
 	wsServer := ws.NewWsWsServer()
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	// r.Use(middleware.Logger)
 
 	fs := http.FileServer(http.Dir("./public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", fs))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.Must(template.ParseFiles("index.html"))
-
-		fmt.Println("Chat rooms", chatRooms)
 
 		tmpl.Execute(w, map[string]interface{}{
 			"Rooms":      chatRooms,
@@ -74,7 +71,7 @@ func main() {
 
 		msg := Message{
 			Sender:  "Anonymous",
-			Content: r.FormValue("content"),
+			Content: utils.RenderMessageWithLinks(r.FormValue("content")),
 		}
 
 		room.Messages = append(room.Messages, msg)
