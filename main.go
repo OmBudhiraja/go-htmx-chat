@@ -13,6 +13,7 @@ import (
 	"github.com/OmBudhiraja/go-htmx-chat/utils"
 	"github.com/OmBudhiraja/go-htmx-chat/ws"
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 	"golang.org/x/net/websocket"
 )
 
@@ -40,6 +41,12 @@ var chatRooms = []ChatRoom{
 
 func main() {
 
+	err := godotenv.Load()
+
+	if err != nil {
+		panic("Error loading .env file")
+	}
+
 	wsServer := ws.NewWsWsServer()
 
 	r := chi.NewRouter()
@@ -49,7 +56,7 @@ func main() {
 	r.Handle("/public/*", http.StripPrefix("/public/", fs))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles("index.html"))
+		tmpl := template.Must(template.ParseFiles("views/index.html"))
 
 		tmpl.Execute(w, map[string]interface{}{
 			"Rooms":      chatRooms,
@@ -80,7 +87,7 @@ func main() {
 
 		fmt.Println("Message received", room)
 
-		tmpl := template.Must(template.ParseFiles("partialTemplates/message.html"))
+		tmpl := template.Must(template.ParseFiles("views/fragments/message.html"))
 		var messageStr bytes.Buffer
 		if err := tmpl.Execute(&messageStr, msg); err != nil {
 			fmt.Println("Error executing template", err.Error())
@@ -102,7 +109,7 @@ func main() {
 		}
 		chatRooms = append(chatRooms, newChatRoom)
 
-		tmpl := template.Must(template.ParseFiles("index.html"))
+		tmpl := template.Must(template.ParseFiles("views/index.html"))
 		tmpl.ExecuteTemplate(w, "roomBtn", newChatRoom)
 	})
 
@@ -116,7 +123,7 @@ func main() {
 		}
 
 		chatRoom := chatRooms[roomId]
-		tmpl := template.Must(template.ParseFiles("index.html"))
+		tmpl := template.Must(template.ParseFiles("views/index.html"))
 		tmpl.ExecuteTemplate(w, "ChatSection", map[string]interface{}{
 			"ActiveRoom": chatRoom,
 		})
@@ -139,7 +146,7 @@ func main() {
 			return
 		}
 
-		tmpl := template.Must(template.ParseFiles("partialTemplates/linkPreviewSkeleton.html"))
+		tmpl := template.Must(template.ParseFiles("views/fragments/linkPreviewSkeleton.html"))
 		tmpl.Execute(w, map[string]interface{}{
 			"Url": url,
 		})
@@ -155,7 +162,7 @@ func main() {
 			return
 		}
 
-		tmpl := template.Must(template.ParseFiles("partialTemplates/linkPreview.html"))
+		tmpl := template.Must(template.ParseFiles("views/fragments/linkPreview.html"))
 		tmpl.Execute(w, &metadata)
 	})
 
