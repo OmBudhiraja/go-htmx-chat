@@ -13,7 +13,6 @@ import (
 	"github.com/OmBudhiraja/go-htmx-chat/utils"
 	"github.com/OmBudhiraja/go-htmx-chat/ws"
 	"github.com/go-chi/chi/v5"
-	"github.com/joho/godotenv"
 	"golang.org/x/net/websocket"
 )
 
@@ -40,12 +39,6 @@ var chatRooms = []ChatRoom{
 }
 
 func main() {
-
-	err := godotenv.Load()
-
-	if err != nil {
-		panic("Error loading .env file")
-	}
 
 	wsServer := ws.NewWsWsServer()
 
