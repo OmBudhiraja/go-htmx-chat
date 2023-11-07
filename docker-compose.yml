@@ -13,3 +13,27 @@ services:
       - 5000:5000
     volumes:
       - .:/app
+    depends_on:
+      - db
+    networks:
+      - myapp_network
+  db:
+    image: postgres:15
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chatapp
+    networks:
+      - myapp_network
+
+networks:
+  myapp_network:
+    driver: bridge
+
+volumes:
+  db_data:

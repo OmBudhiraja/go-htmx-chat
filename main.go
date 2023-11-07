@@ -9,10 +9,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OmBudhiraja/go-htmx-chat/scrapper"
-	"github.com/OmBudhiraja/go-htmx-chat/utils"
-	"github.com/OmBudhiraja/go-htmx-chat/ws"
+	"github.com/OmBudhiraja/go-htmx-chat/internal/auth"
+	"github.com/OmBudhiraja/go-htmx-chat/internal/db"
+	"github.com/OmBudhiraja/go-htmx-chat/internal/scrapper"
+	"github.com/OmBudhiraja/go-htmx-chat/internal/utils"
+	"github.com/OmBudhiraja/go-htmx-chat/internal/ws"
 	"github.com/go-chi/chi/v5"
+	_ "github.com/lib/pq"
 	"golang.org/x/net/websocket"
 )
 
@@ -41,6 +44,8 @@ var chatRooms = []ChatRoom{
 func main() {
 
 	wsServer := ws.NewWsWsServer()
+
+	db.InitDB()
 
 	r := chi.NewRouter()
 	// r.Use(middleware.Logger)
@@ -160,6 +165,13 @@ func main() {
 	})
 
 	r.Handle("/ws", websocket.Handler(wsServer.HandleWS))
+
+	r.Get("/error", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error"))
+	})
+
+	auth.Github(r)
 
 	fmt.Println("Server running on port http://localhost:5000")
 

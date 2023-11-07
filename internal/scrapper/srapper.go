@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/OmBudhiraja/go-htmx-chat/utils"
+	"github.com/OmBudhiraja/go-htmx-chat/internal/utils"
 	"github.com/PuerkitoBio/goquery"
 )
 
