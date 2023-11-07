@@ -43,6 +43,23 @@ func GetUserByAccount(provider, providerAccountId string) (User, bool, error) {
 	return user, true, nil
 }
 
+func GetUserAndSession(token string) (User, Session, bool, error) {
+	var user User
+	var session Session
+
+	row := DB.QueryRow("SELECT users.id, users.name, users.email, users.image, sessions.token, sessions.user_id, sessions.expires FROM sessions INNER JOIN users on sessions.user_id = users.id WHERE sessions.token = $1", token)
+	err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Image, &session.Token, &session.UserId, &session.Expires)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return user, session, false, nil
+		}
+		return user, session, false, err
+	}
+
+	return user, session, true, nil
+}
+
 func CreateUser(name, email string, image sql.NullString) (User, error) {
 	var user User
 

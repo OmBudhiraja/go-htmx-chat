@@ -8,10 +8,11 @@ type Session struct {
 	Expires time.Time
 }
 
-const sessionExpiry = time.Hour * 24 * 30
+const SessionExpiry = time.Hour * 24 * 30
+const SessionUpdateAge = time.Hour * 24
 
 func CreateSession(userId string) (Session, error) {
-	expiry := time.Now().Add(sessionExpiry)
+	expiry := time.Now().Add(SessionExpiry)
 	var token string
 
 	row := DB.QueryRow("INSERT INTO sessions (user_id, expires) VALUES ($1, $2) RETURNING token", userId, expiry)
@@ -38,8 +39,8 @@ func DeleteSession(token string) {
 }
 
 func UpdateSessionExpiry(token string) {
-	expiry := time.Now().Add(sessionExpiry)
+	expiry := time.Now().Add(SessionExpiry)
 
-	DB.Exec("UPDATE sessions SET expires = $1 WHERE token = $3", expiry, token)
+	DB.Exec("UPDATE sessions SET expires = $1 WHERE token = $2", expiry, token)
 
 }

@@ -54,6 +54,7 @@ func main() {
 	r.Handle("/public/*", http.StripPrefix("/public/", fs))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+
 		tmpl := template.Must(template.ParseFiles("views/index.html"))
 
 		tmpl.Execute(w, map[string]interface{}{
@@ -62,7 +63,11 @@ func main() {
 		})
 	})
 
-	r.Post("/chat", func(w http.ResponseWriter, r *http.Request) {
+	r.With(auth.AuthMiddleWare).Post("/chat", func(w http.ResponseWriter, r *http.Request) {
+
+		user := r.Context().Value(auth.UserContextKey).(db.User)
+
+		fmt.Println("User", user)
 
 		roomId, err := strconv.Atoi(r.FormValue("room"))
 
