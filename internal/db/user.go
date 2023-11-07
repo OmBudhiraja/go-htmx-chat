@@ -1,12 +1,14 @@
 package db
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 type User struct {
 	Id    string
 	Name  string
 	Email string
-	Image string
+	Image sql.NullString
 }
 
 func GetUserByEmail(email string) (User, bool, error) {
@@ -41,7 +43,7 @@ func GetUserByAccount(provider, providerAccountId string) (User, bool, error) {
 	return user, true, nil
 }
 
-func CreateUser(name, email, image string) (User, error) {
+func CreateUser(name, email string, image sql.NullString) (User, error) {
 	var user User
 
 	row := DB.QueryRow("INSERT INTO users (name, email, image) VALUES ($1, $2, $3) RETURNING id, name, email, image", name, email, image)

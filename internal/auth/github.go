@@ -37,6 +37,10 @@ func redirectToError(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 }
 
+func createGithubAccount(id string, token *oauth2.Token, providerAccountId string) {
+	db.CreateAccount(id, utils.NewNullString(token.AccessToken), utils.NewNullString(token.RefreshToken), utils.NewNullInteger(token.Expiry.Unix()), "github", providerAccountId, utils.NewNullString(token.Extra("scope").(string)), utils.NewNullString(token.Extra("id_token").(string)))
+}
+
 func Github(router *chi.Mux) {
 	githubClientId := os.Getenv("GITHUB_CLIENT_ID")
 	githubClientSecret := os.Getenv("GITHUB_CLIENT_SECRET")
@@ -129,12 +133,12 @@ func Github(router *chi.Mux) {
 		}
 
 		if exists {
-			db.CreateAccount(userByEmail.Id, token.AccessToken, token.RefreshToken, token.Expiry.Unix(), "github", providerAccountId, token.Extra("scope"), token.Extra("id_token"))
+			createGithubAccount(userByEmail.Id, token, providerAccountId)
 			createSessionAndRedirect(userByEmail.Id, w, r)
 			return
 		}
 
-		user, err := db.CreateUser(githubUserRes.Name, githubUserRes.Email, githubUserRes.AvatarURL)
+		user, err := db.CreateUser(githubUserRes.Name, githubUserRes.Email, utils.NewNullString(githubUserRes.AvatarURL))
 
 		if err != nil {
 			fmt.Println(err)
@@ -142,9 +146,7 @@ func Github(router *chi.Mux) {
 			return
 		}
 
-		// var tokenExpiry int64
-		//  := token.Expiry.IsZero()
-		db.CreateAccount(user.Id, utils.NewNullString(token.AccessToken), utils.NewNullString(token.RefreshToken), utils.NewNullInteger(token.Expiry.Unix()), "github", providerAccountId, token.Extra("scope"), token.Extra("id_token"))
+		createGithubAccount(user.Id, token, providerAccountId)
 		createSessionAndRedirect(user.Id, w, r)
 
 	})

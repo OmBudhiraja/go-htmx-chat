@@ -1,15 +1,17 @@
 package db
 
+import "database/sql"
+
 type Account struct {
 	Id                string
 	UserId            string
-	AccessToken       string
-	RefreshToken      string
-	ExpiresAt         int64
+	AccessToken       sql.NullString
+	RefreshToken      sql.NullString
+	ExpiresAt         sql.NullInt64
 	Provider          string
 	ProviderAccountId string
-	Scope             string
-	IdToken           string
+	Scope             sql.NullString
+	IdToken           sql.NullString
 }
 
 func CreateAccount(details ...any) error {
