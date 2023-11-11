@@ -44,7 +44,6 @@ func createGithubAccount(id string, token *oauth2.Token, providerAccountId strin
 func Github(router *chi.Mux) {
 	githubClientId := os.Getenv("GITHUB_CLIENT_ID")
 	githubClientSecret := os.Getenv("GITHUB_CLIENT_SECRET")
-	oauthStateSecret := os.Getenv("OAUTH_STATE_SECRET")
 
 	if githubClientId == "" || githubClientSecret == "" {
 		panic("GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET not found")
@@ -59,7 +58,9 @@ func Github(router *chi.Mux) {
 	}
 
 	router.Get("/auth/github", func(w http.ResponseWriter, r *http.Request) {
-		url := oauthConfig.AuthCodeURL(oauthStateSecret, oauth2.AccessTypeOnline)
+		state, stateCookie := utils.GenerateState()
+		url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
+		http.SetCookie(w, stateCookie)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	})
 
@@ -68,8 +69,19 @@ func Github(router *chi.Mux) {
 		code := r.URL.Query().Get("code")
 		state := r.URL.Query().Get("state")
 
-		// TODO: State should be created randomly for each request
-		if state != oauthStateSecret {
+		// get state coookie
+		stateCookie, err := r.Cookie("state")
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Invalid state parameter"))
+			return
+		}
+
+		res := utils.ValidateState(state, stateCookie.Value)
+		fmt.Println("ValidateState", res)
+
+		if !utils.ValidateState(state, stateCookie.Value) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid state parameter"))
 			return
