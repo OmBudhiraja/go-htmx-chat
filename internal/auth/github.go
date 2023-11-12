@@ -28,9 +28,9 @@ func createSessionAndRedirect(userId string, w http.ResponseWriter, r *http.Requ
 		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 		return
 	}
-
+	redirectUrl := r.Context().Value(utils.RedirectUrlContextKey).(string)
 	http.SetCookie(w, utils.CreateCookie(utils.SessionCookieName, session.Token, session.Expires))
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirectUrl, http.StatusTemporaryRedirect)
 }
 
 func redirectToError(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,13 @@ func Github(router *chi.Mux) {
 	}
 
 	router.Get("/auth/github", func(w http.ResponseWriter, r *http.Request) {
-		state, stateCookie := utils.GenerateState()
+		redirectUrl := r.URL.Query().Get("redirectUrl")
+
+		if redirectUrl == "" {
+			redirectUrl = "/"
+		}
+
+		state, stateCookie := utils.GenerateState(redirectUrl)
 		url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
 		http.SetCookie(w, stateCookie)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
@@ -67,18 +73,8 @@ func Github(router *chi.Mux) {
 	router.Get("/auth/github/callback", func(w http.ResponseWriter, r *http.Request) {
 
 		code := r.URL.Query().Get("code")
-		state := r.URL.Query().Get("state")
 
-		// get state coookie
-		stateCookie, err := r.Cookie(utils.StateCookieName)
-
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Invalid state parameter"))
-			return
-		}
-
-		if !utils.ValidateState(state, stateCookie.Value) {
+		if !utils.ValidateState(w, r) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid state parameter"))
 			return

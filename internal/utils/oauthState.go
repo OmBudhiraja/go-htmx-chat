@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -14,17 +15,21 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-func GenerateState() (string, *http.Cookie) {
+type contextKey string
+
+const RedirectUrlContextKey contextKey = "redirectUrl"
+
+func GenerateState(redirectUrl string) (string, *http.Cookie) {
 	stateMaxAge := 15 * 60 // 15 minutes
 	state := generateRandomState()
 	encrptionSecret := getDerivedEncryptionKey(StateCookieName)
 
 	now := time.Now()
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"value": state,
-		"iss":   now.Unix(),
-		"exp":   now.Add(time.Duration(stateMaxAge) * time.Second).Unix(),
-		// "jti": "",
+		"value":       state,
+		"redirectUrl": redirectUrl,
+		"iss":         now.Unix(),
+		"exp":         now.Add(time.Duration(stateMaxAge) * time.Second).Unix(),
 	}).SignedString(encrptionSecret)
 
 	if err != nil {
@@ -34,13 +39,22 @@ func GenerateState() (string, *http.Cookie) {
 	return state, CreateCookie(StateCookieName, token, now.Add(time.Duration(stateMaxAge)*time.Second))
 }
 
-func ValidateState(stateFromAuthServer, cookieValue string) bool {
+func ValidateState(w http.ResponseWriter, r *http.Request) bool {
 
-	defer DeleteCookie(StateCookieName)
+	stateFromAuthServer := r.URL.Query().Get("state")
+
+	// get state coookie
+	stateCookie, err := r.Cookie(StateCookieName)
+
+	if err != nil {
+		return false
+	}
+
+	defer http.SetCookie(w, DeleteCookie(StateCookieName))
 
 	encrptionSecret := getDerivedEncryptionKey(StateCookieName)
 
-	token, err := jwt.Parse(cookieValue, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(stateCookie.Value, func(token *jwt.Token) (interface{}, error) {
 		return encrptionSecret, nil
 	})
 
@@ -69,10 +83,11 @@ func ValidateState(stateFromAuthServer, cookieValue string) bool {
 		return false
 	}
 
-	stateValue := claims["value"].(string)
+	// attach redirect url to request
+	req := r.WithContext(context.WithValue(r.Context(), RedirectUrlContextKey, claims["redirectUrl"]))
+	*r = *req
 
-	// decodedValue, err := base64.URLEncoding.DecodeString(encoded)
-	// decodedState, err := base64.URLEncoding.DecodeString(stateFromAuthServer)
+	stateValue := claims["value"].(string)
 
 	if err != nil {
 		fmt.Println("err", err)
