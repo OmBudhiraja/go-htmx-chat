@@ -29,7 +29,7 @@ func createSessionAndRedirect(userId string, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	http.SetCookie(w, utils.CreateCookie("session-token", session.Token, session.Expires))
+	http.SetCookie(w, utils.CreateCookie(utils.SessionCookieName, session.Token, session.Expires))
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
@@ -70,16 +70,13 @@ func Github(router *chi.Mux) {
 		state := r.URL.Query().Get("state")
 
 		// get state coookie
-		stateCookie, err := r.Cookie("state")
+		stateCookie, err := r.Cookie(utils.StateCookieName)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid state parameter"))
 			return
 		}
-
-		res := utils.ValidateState(state, stateCookie.Value)
-		fmt.Println("ValidateState", res)
 
 		if !utils.ValidateState(state, stateCookie.Value) {
 			w.WriteHeader(http.StatusBadRequest)

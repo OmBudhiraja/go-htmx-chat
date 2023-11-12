@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	StateCookieName   = "auth.temp-state"
+	SessionCookieName = "auth.session-token"
+)
+
 func CreateCookie(name, value string, expiry time.Time) *http.Cookie {
 	cookie := http.Cookie{
 		Name:     name,
