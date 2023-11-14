@@ -28,8 +28,8 @@ func createSessionAndRedirect(userId string, w http.ResponseWriter, r *http.Requ
 		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
 		return
 	}
-	redirectUrl := r.Context().Value(utils.RedirectUrlContextKey).(string)
-	http.SetCookie(w, utils.CreateCookie(utils.SessionCookieName, session.Token, session.Expires))
+	redirectUrl := r.Context().Value(RedirectUrlContextKey).(string)
+	http.SetCookie(w, CreateCookie(SessionCookieName, session.Token, session.Expires))
 	http.Redirect(w, r, redirectUrl, http.StatusTemporaryRedirect)
 }
 
@@ -64,7 +64,7 @@ func Github(router *chi.Mux) {
 			redirectUrl = "/"
 		}
 
-		state, stateCookie := utils.GenerateState(redirectUrl)
+		state, stateCookie := GenerateState(redirectUrl)
 		url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
 		http.SetCookie(w, stateCookie)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
@@ -74,7 +74,7 @@ func Github(router *chi.Mux) {
 
 		code := r.URL.Query().Get("code")
 
-		if !utils.ValidateState(w, r) {
+		if !ValidateState(w, r) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid state parameter"))
 			return

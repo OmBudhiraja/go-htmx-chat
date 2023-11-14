@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/OmBudhiraja/go-htmx-chat/internal/db"
-	"github.com/OmBudhiraja/go-htmx-chat/internal/utils"
 )
 
 type MiddlewareContextKey string
@@ -17,7 +16,7 @@ const UserContextKey MiddlewareContextKey = "user"
 func AuthMiddleWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get the token from the cookie
-		token, err := r.Cookie(utils.SessionCookieName)
+		token, err := r.Cookie(SessionCookieName)
 
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -43,7 +42,7 @@ func AuthMiddleWare(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Token Expired"))
 			db.DeleteSession(token.Value)
-			utils.DeleteCookie(utils.SessionCookieName)
+			DeleteCookie(SessionCookieName)
 			return
 		}
 
@@ -55,7 +54,7 @@ func AuthMiddleWare(next http.Handler) http.Handler {
 		if time.Now().After(sessionIsDueToBeUpdatedDate) {
 			fmt.Println("Updating session expiry")
 			db.UpdateSessionExpiry(token.Value)
-			http.SetCookie(w, utils.CreateCookie(utils.SessionCookieName, session.Token, time.Now().Add(db.SessionExpiry)))
+			http.SetCookie(w, CreateCookie(SessionCookieName, session.Token, time.Now().Add(db.SessionExpiry)))
 		}
 
 		ctx := context.WithValue(r.Context(), UserContextKey, user)

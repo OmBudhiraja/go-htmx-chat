@@ -1,4 +1,4 @@
-package utils
+package auth
 
 import (
 	"context"
@@ -11,62 +11,33 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/hkdf"
 )
 
 type contextKey string
 
 const RedirectUrlContextKey contextKey = "redirectUrl"
+const stateMaxAge = time.Minute * 15
+const pkceMaxAge = time.Minute * 15
 
 func GenerateState(redirectUrl string) (string, *http.Cookie) {
-	stateMaxAge := 15 * 60 // 15 minutes
-	state := generateRandomState()
-	encrptionSecret := getDerivedEncryptionKey(StateCookieName)
+	state := generateRandomString()
 
-	now := time.Now()
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"value":       state,
+	return state, CreateSignedCookie(StateCookieName, state, time.Now().Add(stateMaxAge), map[string]interface{}{
 		"redirectUrl": redirectUrl,
-		"iss":         now.Unix(),
-		"exp":         now.Add(time.Duration(stateMaxAge) * time.Second).Unix(),
-	}).SignedString(encrptionSecret)
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	return state, CreateCookie(StateCookieName, token, now.Add(time.Duration(stateMaxAge)*time.Second))
+	})
 }
 
 func ValidateState(w http.ResponseWriter, r *http.Request) bool {
 
 	stateFromAuthServer := r.URL.Query().Get("state")
 
-	// get state coookie
-	stateCookie, err := r.Cookie(StateCookieName)
-
-	if err != nil {
-		return false
-	}
-
 	defer http.SetCookie(w, DeleteCookie(StateCookieName))
 
-	encrptionSecret := getDerivedEncryptionKey(StateCookieName)
-
-	token, err := jwt.Parse(stateCookie.Value, func(token *jwt.Token) (interface{}, error) {
-		return encrptionSecret, nil
-	})
+	claims, err := DecodeSignedCookie(StateCookieName, r)
 
 	if err != nil {
 		fmt.Println("err token parse", err)
-		return false
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-
-	if !ok || !token.Valid {
-		fmt.Println("claims error:", claims)
 		return false
 	}
 
@@ -97,7 +68,45 @@ func ValidateState(w http.ResponseWriter, r *http.Request) bool {
 	return stateValue == stateFromAuthServer
 }
 
-func generateRandomState() string {
+func GeneratePKCECode() (string, *http.Cookie) {
+	codeVerifier := generateRandomString()
+	h := sha256.New()
+	h.Write([]byte(codeVerifier))
+
+	codeChallenge := base64.URLEncoding.EncodeToString(h.Sum(nil))
+
+	return codeChallenge, CreateSignedCookie(PKCECookieName, codeVerifier, time.Now().Add(pkceMaxAge))
+}
+
+func ValidatePKCECode(w http.ResponseWriter, r *http.Request) string {
+
+	defer http.SetCookie(w, DeleteCookie(PKCECookieName))
+
+	claims, err := DecodeSignedCookie(PKCECookieName, r)
+
+	if err != nil {
+		fmt.Println("err token parse", err)
+		return ""
+	}
+
+	exp, ok := claims["exp"].(float64)
+
+	if !ok {
+		fmt.Println("exp error:", exp)
+		return ""
+	}
+
+	if time.Now().After(time.Unix(int64(exp), 0)) {
+		fmt.Println("expired pkce cookie")
+		return ""
+	}
+
+	codeVerifier := claims["value"].(string)
+
+	return codeVerifier
+}
+
+func generateRandomString() string {
 	randomBytes := make([]byte, 32)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
