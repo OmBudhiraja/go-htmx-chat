@@ -21,26 +21,6 @@ type GithubOAuthRes struct {
 	AvatarURL  string `json:"avatar_url"`
 }
 
-func createSessionAndRedirect(userId string, w http.ResponseWriter, r *http.Request) {
-	session, err := db.CreateSession(userId)
-	if err != nil {
-		fmt.Println(err)
-		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
-		return
-	}
-	redirectUrl := r.Context().Value(RedirectUrlContextKey).(string)
-	http.SetCookie(w, CreateCookie(SessionCookieName, session.Token, session.Expires))
-	http.Redirect(w, r, redirectUrl, http.StatusTemporaryRedirect)
-}
-
-func redirectToError(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
-}
-
-func createGithubAccount(id string, token *oauth2.Token, providerAccountId string) {
-	db.CreateAccount(id, utils.NewNullString(token.AccessToken), utils.NewNullString(token.RefreshToken), utils.NewNullInteger(token.Expiry.Unix()), "github", providerAccountId, utils.NewNullString(token.Extra("scope").(string)), utils.NewNullString(token.Extra("id_token").(string)))
-}
-
 func Github(router *chi.Mux) {
 	githubClientId := os.Getenv("GITHUB_CLIENT_ID")
 	githubClientSecret := os.Getenv("GITHUB_CLIENT_SECRET")
@@ -88,9 +68,8 @@ func Github(router *chi.Mux) {
 
 		token, err := oauthConfig.Exchange(r.Context(), code)
 		if err != nil {
-			// return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to exchange token: %s", err.Error()))
 			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Failed to exchange token"))
 			return
 
@@ -112,6 +91,43 @@ func Github(router *chi.Mux) {
 			fmt.Println(err)
 			redirectToError(w, r)
 			return
+		}
+
+		// get email if not present
+		if githubUserRes.Email == "" {
+			resp, err = client.Get("https://api.github.com/user/emails")
+			if err != nil {
+				redirectToError(w, r)
+				return
+			}
+			defer resp.Body.Close()
+
+			var emails []struct {
+				Email   string `json:"email"`
+				Primary bool   `json:"primary"`
+			}
+
+			err = json.NewDecoder(resp.Body).Decode(&emails)
+
+			fmt.Println(emails)
+
+			if err != nil {
+				fmt.Println(err)
+				redirectToError(w, r)
+				return
+			}
+
+			for _, email := range emails {
+				if email.Primary {
+					githubUserRes.Email = email.Email
+					break
+				}
+			}
+
+			if githubUserRes.Email == "" {
+				redirectToError(w, r)
+				return
+			}
 		}
 
 		providerAccountId = strconv.Itoa(githubUserRes.ProviderId)
@@ -155,28 +171,24 @@ func Github(router *chi.Mux) {
 		createSessionAndRedirect(user.Id, w, r)
 
 	})
+}
 
-	// router.Get("/me", func(w http.ResponseWriter, r *http.Request) error {
-	// 	token := &oauth2.Token{
-	// 		AccessToken:  accessToken,
-	// 		RefreshToken: refreshToken,
-	// 		Expiry:       expiry,
-	// 	}
+func createSessionAndRedirect(userId string, w http.ResponseWriter, r *http.Request) {
+	session, err := db.CreateSession(userId)
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+		return
+	}
+	redirectUrl := r.Context().Value(RedirectUrlContextKey).(string)
+	http.SetCookie(w, CreateCookie(SessionCookieName, session.Token, session.Expires))
+	http.Redirect(w, r, redirectUrl, http.StatusTemporaryRedirect)
+}
 
-	// 	client := oauthConfig.Client(c.Context(), token)
-	// 	resp, err := client.Get("https://api.github.com/user")
-	// 	if err != nil {
-	// 		// return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to fetch user: %s", err.Error()))
-	// 	}
-	// 	defer resp.Body.Close()
+func redirectToError(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/error", http.StatusTemporaryRedirect)
+}
 
-	// 	var user GitHubUser
-	// 	err = json.NewDecoder(resp.Body).Decode(&user)
-	// 	if err != nil {
-	// 		// return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to decode user data: %s", err.Error()))
-	// 	}
-
-	// 	return c.JSON(user)
-	// })
-
+func createGithubAccount(id string, token *oauth2.Token, providerAccountId string) {
+	db.CreateAccount(id, utils.NewNullString(token.AccessToken), utils.NewNullString(token.RefreshToken), utils.NewNullInteger(token.Expiry.Unix()), "github", providerAccountId, utils.NewNullString(token.Extra("scope").(string)), utils.NewNullString(token.Extra("id_token").(string)))
 }
