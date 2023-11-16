@@ -176,7 +176,7 @@ func main() {
 		w.Write([]byte("Internal server error"))
 	})
 
-	auth.Github(r)
+	auth.InitOauth(r)
 
 	fmt.Println("Server running on port http://localhost:5000")
 

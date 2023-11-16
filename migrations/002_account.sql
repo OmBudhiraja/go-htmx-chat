@@ -9,6 +9,7 @@ CREATE TABLE accounts (
     provider_account_id TEXT NOT NULL,
     scope TEXT,
     id_token TEXT,
+    type TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
