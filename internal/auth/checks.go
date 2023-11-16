@@ -73,7 +73,7 @@ func GeneratePKCECode() (string, *http.Cookie) {
 	h := sha256.New()
 	h.Write([]byte(codeVerifier))
 
-	codeChallenge := base64.URLEncoding.EncodeToString(h.Sum(nil))
+	codeChallenge := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
 
 	return codeChallenge, CreateSignedCookie(PKCECookieName, codeVerifier, time.Now().Add(pkceMaxAge))
 }
