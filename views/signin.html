@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In | HTMX Chat</title>
+    <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio,line-clamp"></script>
+  </head>
+  <body>
+    <div class="h-screen flex flex-col items-center justify-center gap-6">
+      {{ range .Providers }}
+      <form action="http://localhost:5000/auth/{{ . }}" method="post">
+        <button
+          class="border-2 border-black border-opacity-85 py-2.5 px-8 rounded-sm capitalize font-semibold"
+        >
+          Sign in with {{ . }}
+        </button>
+      </form>
+      {{ end }}
+    </div>
+  </body>
+</html>

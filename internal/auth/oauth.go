@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/OmBudhiraja/go-htmx-chat/internal/auth/providers"
@@ -12,7 +13,22 @@ import (
 )
 
 func InitOauth(router *chi.Mux) {
-	router.Get("/auth/{provider}", func(w http.ResponseWriter, r *http.Request) {
+
+	router.Get("/auth/signin", func(w http.ResponseWriter, r *http.Request) {
+		tmpl := template.Must(template.ParseFiles("views/signin.html"))
+
+		providersList := make([]string, 0, len(providers.ProvidersMap))
+
+		for k := range providers.ProvidersMap {
+			providersList = append(providersList, k)
+		}
+
+		tmpl.Execute(w, map[string]interface{}{
+			"Providers": providersList,
+		})
+	})
+
+	router.Post("/auth/{provider}", func(w http.ResponseWriter, r *http.Request) {
 		redirectUrl := r.URL.Query().Get("redirectUrl")
 
 		provider := providers.ProvidersMap[chi.URLParam(r, "provider")]
@@ -39,7 +55,7 @@ func InitOauth(router *chi.Mux) {
 			url = provider.Config.AuthCodeURL(state, oauth2.AccessTypeOnline)
 		}
 
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, url, http.StatusSeeOther)
 	})
 
 	router.Get("/auth/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
