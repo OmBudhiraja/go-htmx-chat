@@ -13,10 +13,10 @@
     <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
     <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio,line-clamp"></script>
     <style>
-      a {
+      .message a {
         color: rgb(59, 13, 246) !important;
       }
-      a:hover {
+      .message a:hover {
         text-decoration: underline;
       }
 
@@ -53,8 +53,33 @@
     <div class="flex h-screen">
       <aside
         id="rooms-lists"
-        class="h-full max-h-full overflow-y-auto w-72 bg-gray-100 p-5 flex flex-col gap-5"
+        class="h-full max-h-full overflow-y-auto w-80 bg-gray-100 p-5 flex flex-col gap-5"
       >
+        {{ if .LoggedIn }}
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <img
+              src="{{ .User.Image.String }}"
+              class="h-8 w-8 rounded-full object-cover"
+              referrerpolicy="no-referrer"
+              alt=""
+            />
+            <div class="flex flex-col max-w-full overflow-hidden">
+              <p class="text-sm font-semibold">{{ .User.Name }}</p>
+              <span class="text-gray-500 text-xs overflow-hidden text-ellipsis block"
+                >{{ .User.Email }}</span
+              >
+            </div>
+          </div>
+          <button class="flex-shrink-0 bg-gray-200 px-3 py-1 rounded text-slate-900">
+            Log Out
+          </button>
+        </div>
+        {{ else }}
+        <a href="/auth/signin" class="bg-gray-200 text-center px-3 py-2 rounded text-slate-900"
+          >Login</a
+        >
+        {{ end }}
         <button
           hx-post="/create-room"
           hx-trigger="click"
@@ -86,7 +111,7 @@
         <div class="flex flex-col-reverse overflow-y-auto max-h-full flex-1 w-full">
           <div id="messages" class="w-full flex flex-col gap-4 pt-5 px-5">
             {{ range .ActiveRoom.Messages }} {{ block "message" . }}
-            <div class="bg-gray-100 px-4 py-2 w-fit max-w-sm origin-left">
+            <div class="bg-gray-100 px-4 py-2 w-fit max-w-sm origin-left message">
               <strong>{{ .Sender }}</strong>: {{ .Content }}
             </div>
             {{ end }} {{ end }}
