@@ -69,7 +69,7 @@ func main() {
 		})
 	})
 
-	r.With(auth.AuthMiddleWare).Post("/chat", func(w http.ResponseWriter, r *http.Request) {
+	r.With(auth.RequireUser).Post("/chat", func(w http.ResponseWriter, r *http.Request) {
 
 		user, exists := r.Context().Value(auth.UserContextKey).(db.User)
 
