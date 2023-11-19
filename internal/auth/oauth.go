@@ -36,6 +36,20 @@ func InitOauth(router *chi.Mux) {
 		})
 	})
 
+	router.Post("/auth/signout", func(w http.ResponseWriter, r *http.Request) {
+		token, err := r.Cookie(SessionCookieName)
+
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+			return
+		}
+
+		db.DeleteSession(token.Value)
+		http.SetCookie(w, DeleteCookie(SessionCookieName))
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
+
 	router.Post("/auth/{provider}", func(w http.ResponseWriter, r *http.Request) {
 		redirectUrl := r.URL.Query().Get("redirectUrl")
 

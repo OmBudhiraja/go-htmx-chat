@@ -71,9 +71,11 @@
               >
             </div>
           </div>
-          <button class="flex-shrink-0 bg-gray-200 px-3 py-1 rounded text-slate-900">
-            Log Out
-          </button>
+          <form class="flex-shrink-0" action="/auth/signout" method="post">
+            <button class="bg-gray-200 px-3 py-1 rounded text-slate-900" type="submit">
+              Log Out
+            </button>
+          </form>
         </div>
         {{ else }}
         <a href="/auth/signin" class="bg-gray-200 text-center px-3 py-2 rounded text-slate-900"
