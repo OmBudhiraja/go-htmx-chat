@@ -14,7 +14,15 @@ import (
 
 func InitOauth(router *chi.Mux) {
 
-	router.Get("/auth/signin", func(w http.ResponseWriter, r *http.Request) {
+	router.With(AttachUserToContext).Get("/auth/signin", func(w http.ResponseWriter, r *http.Request) {
+
+		_, exists := r.Context().Value(UserContextKey).(db.User)
+
+		if exists {
+			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			return
+		}
+
 		tmpl := template.Must(template.ParseFiles("views/signin.html"))
 
 		providersList := make([]string, 0, len(providers.ProvidersMap))

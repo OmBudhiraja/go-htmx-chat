@@ -2,7 +2,6 @@ package ws
 
 import (
 	"fmt"
-	"io"
 	"strconv"
 
 	"golang.org/x/net/websocket"
@@ -38,20 +37,21 @@ func (s *WsServer) CloseWS(ws *websocket.Conn) {
 	delete(s.clients, ws)
 }
 
+// Currently this does nothing, works mainly as server side events (direct messages from ws are not handled)
 func (s *WsServer) readLoop(ws *websocket.Conn) {
 	var buff []byte
 	for {
-		n, err := ws.Read(buff)
-
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Println("Error reading message", err.Error())
-			continue
-		}
-		msg := buff[:n]
-		fmt.Println("Message received", string(msg))
+		ws.Read(buff)
+		// n, err := ws.Read(buff)
+		// if err != nil {
+		// 	if err == io.EOF {
+		// 		break
+		// 	}
+		// 	fmt.Println("Error reading message", err.Error())
+		// 	continue
+		// }
+		// msg := buff[:n]
+		// fmt.Println("Message received", string(msg))
 
 	}
 }

@@ -53,11 +53,17 @@ func main() {
 	fs := http.FileServer(http.Dir("./public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", fs))
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	r.With(auth.AttachUserToContext).Get("/", func(w http.ResponseWriter, r *http.Request) {
+
+		user, exists := r.Context().Value(auth.UserContextKey).(db.User)
+
+		fmt.Println("User", user)
 
 		tmpl := template.Must(template.ParseFiles("views/index.html"))
 
 		tmpl.Execute(w, map[string]interface{}{
+			"LoggedIn":   exists,
+			"User":       user,
 			"Rooms":      chatRooms,
 			"ActiveRoom": chatRooms[0],
 		})
@@ -65,7 +71,13 @@ func main() {
 
 	r.With(auth.AuthMiddleWare).Post("/chat", func(w http.ResponseWriter, r *http.Request) {
 
-		user := r.Context().Value(auth.UserContextKey).(db.User)
+		user, exists := r.Context().Value(auth.UserContextKey).(db.User)
+
+		if !exists {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+			return
+		}
 
 		fmt.Println("User", user)
 

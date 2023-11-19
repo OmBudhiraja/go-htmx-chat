@@ -13,7 +13,7 @@ type MiddlewareContextKey string
 
 const UserContextKey MiddlewareContextKey = "user"
 
-func AuthMiddleWare(next http.Handler) http.Handler {
+func RequireUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get the token from the cookie
 		token, err := r.Cookie(SessionCookieName)
@@ -55,6 +55,34 @@ func AuthMiddleWare(next http.Handler) http.Handler {
 			fmt.Println("Updating session expiry")
 			db.UpdateSessionExpiry(token.Value)
 			http.SetCookie(w, CreateCookie(SessionCookieName, session.Token, time.Now().Add(db.SessionExpiry)))
+		}
+
+		ctx := context.WithValue(r.Context(), UserContextKey, user)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func AttachUserToContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// get the token from the cookie
+		token, err := r.Cookie(SessionCookieName)
+
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		user, _, exists, err := db.GetUserAndSession(token.Value)
+
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if !exists {
+			next.ServeHTTP(w, r)
+			return
 		}
 
 		ctx := context.WithValue(r.Context(), UserContextKey, user)
