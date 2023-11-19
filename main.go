@@ -57,16 +57,19 @@ func main() {
 
 		user, exists := r.Context().Value(auth.UserContextKey).(db.User)
 
-		fmt.Println("User", user)
+		templateData := map[string]interface{}{
+			"LoggedIn":   exists,
+			"Rooms":      chatRooms,
+			"ActiveRoom": chatRooms[0],
+		}
+
+		if exists {
+			templateData["User"] = utils.FlattenUser(user)
+		}
 
 		tmpl := template.Must(template.ParseFiles("views/index.html"))
 
-		tmpl.Execute(w, map[string]interface{}{
-			"LoggedIn":   exists,
-			"User":       user,
-			"Rooms":      chatRooms,
-			"ActiveRoom": chatRooms[0],
-		})
+		tmpl.Execute(w, templateData)
 	})
 
 	r.With(auth.RequireUser).Post("/chat", func(w http.ResponseWriter, r *http.Request) {

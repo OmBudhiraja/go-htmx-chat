@@ -59,7 +59,7 @@
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2 overflow-hidden">
             <img
-              src="{{ .User.Image.String }}"
+              src="{{ if .User.Image }} {{ .User.Image }} {{ else }} /public/images/user-avatar-placeholder.png {{ end }}"
               class="h-8 w-8 rounded-full object-cover"
               referrerpolicy="no-referrer"
               alt=""
@@ -82,6 +82,7 @@
           >Login</a
         >
         {{ end }}
+
         <button
           hx-post="/create-room"
           hx-trigger="click"

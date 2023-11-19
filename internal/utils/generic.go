@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"net/url"
 	"regexp"
+
+	"github.com/OmBudhiraja/go-htmx-chat/internal/db"
 )
 
 func IsValidURL(str string) bool {
@@ -60,4 +62,18 @@ func NewNullInteger(i int64) sql.NullInt64 {
 		Int64: i,
 		Valid: true,
 	}
+}
+
+func FlattenUser(u db.User) map[string]interface{} {
+	flattened := make(map[string]interface{})
+
+	flattened["Id"] = u.Id
+	flattened["Name"] = u.Name
+	flattened["Email"] = u.Email
+
+	if u.Image.Valid {
+		flattened["Image"] = u.Image.String
+	}
+
+	return flattened
 }
